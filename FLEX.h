@@ -28,51 +28,89 @@
 
 
 
+
+
+/// @ingroup flexBase
+/// @{
+void FLEXBASE_SendTree( uint8_t userp[], uint16_t size, const uint8_t head[4UL], const uint8_t tail[4UL], flexTXService _TX );
+
+
+
+/// @}
+
+
+
+
+
+
 /// @ingroup flexAPI
 /// @{
 
-/// @ brief defines the start of a flex-tree structure
-#define FLEXTREE_BEGIN(tag)                                             \
-    static union  __flexdef_Tree_##tag                                  \
-    {                                                                   \
-        struct __flexdef_Struct_##tag                                   \
+
+/// @ brief defines the start of a flexTree structure
+#define FLEXTREE_BEGIN(tag)                                                                 \
+    static const uint8_t    flexdef_MessageHeader_##tag[4UL]    = "<FLX";                   \
+    static const uint8_t    flexdef_MessageTrailer_##tag[4UL]   = "FLX>";                   \
+    static uint16_t         flexdef_MessageItr_##tag            = 0UL;                      \
+    static union  __flexdef_Tree_##tag                                                      \
+    {                                                                                       \
+        struct __flexdef_Struct_##tag                                                       \
         {
 
 
 
 
 /// @brief Defines the end of a flexTree structure
-#define FLEXTREE_END(tag)                                               \
-        } flexdef_Struct_##tag;                                         \
-        uint8_t flexdef_cbuf[sizeof(struct __flexdef_Struct_##tag)];    \
-    } flexdef_Tree_##tag;                                               \
+#define FLEXTREE_END(tag)                                                                   \
+        } flexdef_Struct_##tag;                                                             \
+        uint8_t flexdef_cbuf[sizeof(struct __flexdef_Struct_##tag)];                        \
+    } flexdef_Tree_##tag;                                                                   \
 
+
+
+/// @brief Sends the flexTree using the provided tx-service
+#define FLEXTREE_SEND(tag,tx_fn)                                                            \
+    FLEXBASE_SendTree(                                                                      \
+        flexdef_Tree_##tag.flexdef_cbuf,                                                    \
+        sizeof(flexdef_Tree_##tag.flexdef_Struct_##tag),                                    \
+        flexdef_MessageHeader_##tag,                                                        \
+        flexdef_MessageTrailer_##tag,                                                       \
+        tx_fn                                                                               \
+    )
 
 
 
 /// @brief Adds a variable to the flexTree
-#define FLEXTREE_VAR(_ty,varname)                                       \
+#define FLEXTREE_VAR(_ty,varname)                                                           \
         _ty varname;
 
 
 
 
 /// @brief Get a variable from the flexTree
-#define FLEXTREE_GETVAR(tag,varname)                                    \
+#define FLEXTREE_GETVAR(tag,varname)                                                        \
     (flexdef_Tree_##tag.flexdef_Struct_##tag).varname
 
 
 
 
 /// @brief Gets the size of the flexTree in bytes
-#define FLEXTREE_GETSIZE(tag)                                           \
-    sizeof(flexdef_Tree_##tag.__flexdef_Struct_##tag)
+#define FLEXTREE_GETSIZE(tag)                                                               \
+    sizeof(flexdef_Tree_##tag.flexdef_Struct_##tag)
 
 
 
 /// @brief Gets the current output buffer corresponding to the target flexTree
-#define FLEXTREE_GETBUG(tag)                                            \
+#define FLEXTREE_GETBUF(tag)                                                                \
     flexdef_Tree_##tag.flexdef_cbuf
+
+
+
+/// @brief Set a variable from a flexTree value
+#define FLEXTREE_SETFROMVAR(tag,varname,this)                                               \
+    this = (flexdef_Tree_##tag.flexdef_Struct_##tag).varname
+
+
 
 /// @}
 
