@@ -6,34 +6,63 @@
 /// @ingroup flexTypedefs
 /// @{
 
-    typedef void(*flexTXService)    (uint8_t);
-    typedef uint8_t(*flexRXService) (void);
+typedef void(*flexTXService)   (uint8_t);
+typedef uint8_t(*flexRXService)(void);
 
-    /// @brief  Generic Ring-Buffer Structure
-    /// @var    rd_idx          next slot in buffer to read from
-    /// @var    wr_idx          next slot in buffer to write to
-    /// @var    size            number of unread bytes in buffer
-    /// @var    data            buffer stack space
-    /// @var    overflow        buffer-overflow flag
-    typedef struct {
-        uint16_t                rd_idx;
-        uint16_t                wr_idx;
-        uint16_t                size;
-        uint8_t                 data[2048UL];
-        uint8_t                 flags;
-    } flexBuffer_t;
+#define FLEXBUFFER_CAP                      2048UL
 
+/// @brief  Generic Ring-Buffer Structure
+/// @var    rd_idx          next slot in buffer to read from
+/// @var    wr_idx          next slot in buffer to write to
+/// @var    size            number of unread bytes in buffer
+/// @var    data            buffer stack space
+/// @var    overflow        buffer-overflow flag
+typedef struct {
+    uint16_t                rd_idx;
+    uint16_t                wr_idx;
+    uint16_t                pr_idx;
+    uint16_t                size;
+    uint8_t                 flags;
+    uint8_t                 data[FLEXBUFFER_CAP];
+} flexBuffer_t;
+#define FLEXBUFFER_INITIALIZER              {0,0,0,0}
+#define FLEXBUFFER_RDPP(buf_p)              if(buf_p->size > 0UL           ) { --buf_p->size; ++buf_p->rd_idx; buf_p->rd_idx%=FLEXBUFFER_CAP; }
+#define FLEXBUFFER_WRPP(buf_p)              if(buf_p->size < FLEXBUFFER_CAP) { ++buf_p->size; ++buf_p->wr_idx; buf_p->wr_idx%=FLEXBUFFER_CAP; }
+#define FLEXBUFFER_SIZE(buf_p)              buf_p->size
+#define FLEXBUFFER_RD_AT(buf_p)             buf_p->data[buf_p->rd_idx]
+#define FLEXBUFFER_WR_AT(buf_p)             buf_p->data[buf_p->wr_idx]
 /// @}
 
 
 
+/// @ingroup flexRXStat
+/// @{
+typedef struct _flexRXStat
+{
+    uint16_t    head_itr;
+    uint16_t    data_itr;
+    uint16_t    tail_itr;
+    uint8_t     checksum;
+    uint8_t     temp_buf[2048];
+} flexRXStat_t;
+
+#define FLEXRXSTAT_RESET(stat_p)                                                            \
+    stat_p->head_itr    =                                                                   \
+    stat_p->tail_itr    =                                                                   \
+    stat_p->data_itr    =                                                                   \
+    stat_p->checksum    = 0;
+
+#define FLEXRXSTAT_COPY(stat_p,userp)                                                       \
+    while(stat_p->data_itr--)                                                               \
+        userp[stat_p->data_itr] = stat_p->temp_buf[stat_p->data_itr]
+/// @}
 
 
 
 /// @ingroup flexBase
 /// @{
-void FLEXBASE_SendTree( uint8_t userp[], uint16_t size, const uint8_t head[4UL], const uint8_t tail[4UL], flexTXService _TX );
-
+void    FLEXBASE_SendTree( uint8_t userp[], uint16_t size, flexTXService _TX );
+uint8_t FLEXBASE_RecvTree( uint8_t userp[], uint16_t size, flexRXService _RX, flexRXStat_t* _RXStat );
 
 
 /// @}
@@ -49,9 +78,7 @@ void FLEXBASE_SendTree( uint8_t userp[], uint16_t size, const uint8_t head[4UL],
 
 /// @ brief defines the start of a flexTree structure
 #define FLEXTREE_BEGIN(tag)                                                                 \
-    static const uint8_t    flexdef_MessageHeader_##tag[4UL]    = "<FLX";                   \
-    static const uint8_t    flexdef_MessageTrailer_##tag[4UL]   = "FLX>";                   \
-    static uint16_t         flexdef_MessageItr_##tag            = 0UL;                      \
+    static flexRXStat_t     flexDef_RecvSupports_##tag          = {0,0,0,0};                \
     static union  __flexdef_Tree_##tag                                                      \
     {                                                                                       \
         struct __flexdef_Struct_##tag                                                       \
@@ -68,15 +95,26 @@ void FLEXBASE_SendTree( uint8_t userp[], uint16_t size, const uint8_t head[4UL],
 
 
 
+
 /// @brief Sends the flexTree using the provided tx-service
 #define FLEXTREE_SEND(tag,tx_fn)                                                            \
     FLEXBASE_SendTree(                                                                      \
         flexdef_Tree_##tag.flexdef_cbuf,                                                    \
         sizeof(flexdef_Tree_##tag.flexdef_Struct_##tag),                                    \
-        flexdef_MessageHeader_##tag,                                                        \
-        flexdef_MessageTrailer_##tag,                                                       \
         tx_fn                                                                               \
     )
+
+
+
+/// @brief Sends the flexTree using the provided rx-service
+#define FLEXTREE_RECV(tag,rx_fn)                                                            \
+    FLEXBASE_RecvTree(                                                                      \
+        flexdef_Tree_##tag.flexdef_cbuf,                                                    \
+        sizeof(flexdef_Tree_##tag.flexdef_Struct_##tag),                                    \
+        rx_fn,                                                                              \
+    &   flexDef_RecvSupports_##tag                                                          \
+    )
+
 
 
 
