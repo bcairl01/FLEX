@@ -1,3 +1,9 @@
+/// @file  FLEX.h
+/// @brief A light-weight blackboarding-type communication protocol for embedded platforms
+///
+/// @defgroup FLEXTypedefs
+/// @defgroup FLEXBase
+/// @defgroup FLEXAPI
 #ifndef     FLEX_H
 #define     FLEX_H
 #include    "stdint.h"

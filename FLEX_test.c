@@ -1,62 +1,70 @@
 #include "FLEX.h"
 #include "stdio.h"
 
-FLEXTREE_BEGIN(TEST_a);
-	FLEXTREE_VAR(double  	,a_float);
-	FLEXTREE_VAR(float 		,b_float[5UL]);
-	FLEXTREE_VAR(double 	,c_float[5UL]);
-	FLEXTREE_VAR(uint8_t 	,d_char);
-	FLEXTREE_VAR(uint8_t 	,e_char);
-FLEXTREE_END(TEST_a);
+
+/// Some tree that will be changed on MCU_A and updated on MCU_B
+FLEXTREE_BEGIN(MCU_A);
+	FLEXTREE_VAR(float  	,a_float);
+	FLEXTREE_VAR(float  	,more_floats[10]);
+	FLEXTREE_VAR(double  	,a_double);
+	FLEXTREE_VAR(char 		,a_char);
+	FLEXTREE_VAR(int 		,a_int);
+	FLEXTREE_VAR(long 		,a_long);
+FLEXTREE_END(MCU_A);
 
 
-FLEXTREE_BEGIN(TEST_b);
-	FLEXTREE_VAR(double  	,a_float);
-	FLEXTREE_VAR(float 		,b_float[5UL]);
-	FLEXTREE_VAR(double 	,c_float[5UL]);
-	FLEXTREE_VAR(uint8_t 	,d_char);
-	FLEXTREE_VAR(uint8_t 	,e_char);
-FLEXTREE_END(TEST_b);
+
+/// Some tree that will be updated on MCU_B and changed on MCU_A
+FLEXTREE_BEGIN(MCU_B);
+	FLEXTREE_VAR(float  	,a_float);
+	FLEXTREE_VAR(float  	,more_floats[10]);
+	FLEXTREE_VAR(double  	,a_double);
+	FLEXTREE_VAR(char 		,a_char);
+	FLEXTREE_VAR(int 		,a_int);
+	FLEXTREE_VAR(long 		,a_long);
+FLEXTREE_END(MCU_B);
 
 
-static uint8_t  temp_buf[1000];
-static uint16_t temp_itr 	= 0;
-static uint16_t temp_itr_r 	= 0;
-void tx_test(uint8_t byte)
+
+
+/// Simulates "A" sending to "B"
+void transmit_to_MCU_B(uint8_t byte)
 {
-	temp_buf[temp_itr++] = byte;
-	//printf("%c",byte);
+	FLEXTREE_RXBYTE(MCU_B,byte);
 }
 
-
-uint8_t rx_test()
-{
-	return temp_buf[temp_itr_r++];
-}
 
 
 int main(void)
 {
-	FLEXTREE_GETVAR(TEST_a,a_float) = 0.2f;
-	FLEXTREE_GETVAR(TEST_a,d_char)  = 'F';
-	FLEXTREE_GETVAR(TEST_a,e_char)  = 'L';
-
-	while(1)
-	{
-		temp_itr = temp_itr_r = 0;
-		FLEXTREE_GETVAR(TEST_a,a_float)+=0.1f;
-		//printf("  Size: %d\n", FLEXTREE_GETSIZE(TEST_a));
-		//printf("  Size: %d\n", FLEXTREE_GETSIZE(TEST_b));
-
-		FLEXTREE_SEND(TEST_a,tx_test); //printf("  Size: %d\n", FLEXTREE_GETSIZE(TEST_a));
+	/// Setup MCU_A's recieve stack to be 1000 bytes long
+	FLEXTREE_SETUP(MCU_A,1000);
 	
-				
-		for( uint8_t idx=0; idx < temp_itr; idx++ )
-		{
-			FLEXTREE_RECV(TEST_b,rx_test);
-		}
+	/// Setup MCU_B's recieve stack to be 1000 bytes long
+	FLEXTREE_SETUP(MCU_B,100);
+
+
+	while( FLEXTREE_GETVAR(MCU_B,a_float) < 10.0f )
+	{
+		/// Change a variable on MCU_A
+		FLEXTREE_GETVAR(MCU_A,a_float)+=0.01f;
+
+		/// Send the tree to MCU_B
+		FLEXTREE_SEND(MCU_A,transmit_to_MCU_B);
+	
+
+
+		/// Update MCU_B
+		FLEXTREE_UPDATE(MCU_B);
 		
-		printf("%f\n",FLEXTREE_GETVAR(TEST_b,a_float));
+		///Check the corresponding variabel on MCU_B
+		printf("%f\n",FLEXTREE_GETVAR(MCU_B,a_float));
 	}
+
+	/// Clean up MCU_A's memory
+	FLEXTREE_CLEAR(MCU_A);
+
+	/// Clean up MCU_B's memory 
+	FLEXTREE_CLEAR(MCU_B);
 	return 0UL;
 }
