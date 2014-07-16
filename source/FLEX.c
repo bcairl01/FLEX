@@ -1,4 +1,5 @@
-
+/// @file  FLEX.c
+/// @brief A light-weight blackboarding-type communication protocol for embedded platforms
 #include "FLEX.h"
 
 

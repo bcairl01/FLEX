@@ -1,3 +1,9 @@
+/// @file  FLEX.h
+/// @brief A light-weight blackboarding-type communication protocol for embedded platforms
+///
+/// @defgroup FLEXTypedefs
+/// @defgroup FLEXBase
+/// @defgroup FLEXAPI
 #ifndef     FLEX_H
 #define     FLEX_H
 #include    "stdint.h"
@@ -82,7 +88,8 @@
 
     /// @brief Initializes FLEXTree support structures. To be called AFTER a FLEXTree is defined
     #define FLEXTREE_SETUP(tag,size)                                                            \
-        buffer_alloc(&FLEXDef_Buffer_##tag,size)
+        buffer_init(&FLEXDef_Buffer_##tag,size);                                                \
+        buffer_alloc(&FLEXDef_Buffer_##tag,size);
 
 
 
