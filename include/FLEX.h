@@ -1,21 +1,31 @@
-/// @file  FLEX.h
-/// @brief A light-weight blackboarding-type communication protocol for embedded platforms
+/// @file   FLEX.h
+/// @brief  A light-weight black-boarding communication protocol for embedded platforms
+///
+///         Requires:
+///         ===========
+///         - cbuffer.h     
 ///
 /// @defgroup FLEXTypedefs
 /// @defgroup FLEXBase
-/// @defgroup FLEXAPI
+/// @defgroup FLEX_UserAPI
 #ifndef     FLEX_H
 #define     FLEX_H
 #include    "stdint.h"
 #include    "cbuffer.h"
 
 
+
 /// @ingroup FLEXTypedefs
 /// @{
 
+
+    /// @brief  Function pointer type for single-byte transmit callback
+    ///         [INTERNAL - DO NOT USE ; Use FLEX_UserAPI only!]
     typedef void(*FLEXTXService)   (uint8_t);
 
 
+    /// @brief  FLEX-Tree status structure
+    ///         [INTERNAL - DO NOT USE ; Use FLEX_UserAPI only!]
     typedef struct _FLEXRXStat
     {
         uint16_t    head_itr;
@@ -26,6 +36,8 @@
     } FLEXRXStat_t;
 
 
+    /// @brief  Sets zeros to all iterators within a variable of type FLEXRXStat_t
+    ///         [INTERNAL - DO NOT USE ; Use FLEX_UserAPI only!]
     #define FLEXRXSTAT_RESET(stat_p)                                                            \
         stat_p->head_itr    =                                                                   \
         stat_p->tail_itr    =                                                                   \
@@ -33,6 +45,8 @@
         stat_p->checksum    = 0;
 
 
+    /// @brief  Copies user data into into the FLEXRXStat_t for checksum processing
+    ///         [INTERNAL - DO NOT USE ; Use FLEX_UserAPI only!]
     #define FLEXRXSTAT_COPY(stat_p,userp)                                                       \
         while(stat_p->data_itr--)                                                               \
             userp[stat_p->data_itr] = stat_p->checkbuf[stat_p->data_itr]
@@ -47,12 +61,13 @@
 /// @ingroup FLEXBase
 /// @{
 
-
+    /// @brief  Transmits a FLEXTree 
+    ///         [INTERNAL - DO NOT USE ; Use FLEX_UserAPI only!]
     void    FLEXBASE_SendTree( uint8_t userp[], uint16_t size, FLEXTXService _TX );
     
-
+    /// @brief  Checks recieved data and updates the FLEXTree accordingly.
+    ///         [INTERNAL - DO NOT USE ; Use FLEX_UserAPI only!]
     uint8_t FLEXBASE_UpdateTree( uint8_t userp[], uint16_t size, cbuffer* buf_p, FLEXRXStat_t* _RXStat );
-
 
 /// @}
 
@@ -61,14 +76,14 @@
 
 
 
-/// @ingroup FLEXAPI
+/// @ingroup FLEX_UserAPI
 /// @{
 
 
     /// @ brief defines the start of a FLEXTree structure
     #define FLEXTREE_BEGIN(tag)                                                                 \
-        static FLEXRXStat_t     FLEXDef_RecvSupports_##tag          = {0,0,0,0};                \
-        static cbuffer          FLEXDef_Buffer_##tag;                                           \
+        static FLEXRXStat_t     FLEXDEF_RecvSupports_##tag          = {0,0,0,0};                \
+        static cbuffer          FLEXDEF_Buffer_##tag;                                           \
         static union  __FLEXDEF_Tree_##tag                                                      \
         {                                                                                       \
             struct __FLEXDEF_Struct_##tag                                                       \
@@ -88,7 +103,7 @@
 
     /// @brief Initializes FLEXTree support structures. To be called AFTER a FLEXTree is defined
     #define FLEXTREE_SETUP(tag,size)                                                            \
-        buffer_init(&FLEXDef_Buffer_##tag,size);                                                \
+        buffer_init(&FLEXDEF_Buffer_##tag,size);                                                \
         buffer_alloc(&FLEXDef_Buffer_##tag,size);
 
 
@@ -117,8 +132,8 @@
         FLEXBASE_UpdateTree(                                                                    \
             FLEXDEF_Tree_##tag.FLEXDEF_cbuf,                                                    \
             sizeof(FLEXDEF_Tree_##tag.FLEXDEF_Struct_##tag),                                    \
-        &   FLEXDef_Buffer_##tag,                                                               \
-        &   FLEXDef_RecvSupports_##tag                                                          \
+        &   FLEXDEF_Buffer_##tag,                                                               \
+       EF   FLEXDef_RecvSupports_##tag                                                          \
         )
 
 
@@ -145,14 +160,14 @@
 
 
     /// @brief Sets byte to recieve buffer
-    #define FLEXTREE_RXBYTE(tag,byte)                                                           \
+    #define FLEXTREE_RXBYTE(tag,byte)                                                           \        
         buffer_put(&FLEXDef_Buffer_##tag,byte)
 
 
 
 
     /// @brief Gets the status of the FLEXTree. Returns '1' is all is well
-    #define FLEXTREE_OK(tag)                                                                    \
+    #define FLEXTREE_OK(tag)                                                                    \        
         BUFFER_OK(&FLEXDef_Buffer_##tag)
 
 
