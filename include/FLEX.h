@@ -5,6 +5,46 @@
 ///         ===========
 ///         - cbuffer.h     
 ///
+///     
+///         Usage Notes:
+///         ============
+///         FLEX is ideal for use in situations where you would like to transfer a 'workspace' or collection of variables
+///         from one controller to another. Variables whose values are update, i.e., are sent / received by the FLEX protocol
+///         are defined within a structure called a FLEX-tree workspace.
+///         \n
+///         Variables are declared within the FLEX-tree workspace like so:
+///         \n
+///         FLEXTREE_BEGIN(TREE_TAG);
+///             FLEXTREE_VAR(float      ,a_float);
+///             FLEXTREE_VAR(float      ,more_floats[10]);
+///             FLEXTREE_VAR(double     ,a_double);
+///             FLEXTREE_VAR(char       ,a_char);
+///             FLEXTREE_VAR(int        ,a_int);
+///             FLEXTREE_VAR(long       ,a_long);
+///         FLEXTREE_END(TREE_TAG);
+///         \n
+///         'TREE_TAG' is a unique name given to a FLEX-tree workspace. This tag should be unique for all FLEX workspaces
+///         defined on a single system.
+///         \n
+///         When a variable is defined within a FLEX-tree, it is automatically updated from received data whenever
+///         FLEXTREE_UPDATE(TREE_TAG) is called, where tag is the name. Variables within the FLEX-tree can be accessed using the 
+///         macro FLEXTREE_GETVAR(TREE_TAG,VAR_NAME) where 'VAR_NAME' is the name of a variable registered within the FLEX-tree
+///         given the tag 'TREE_TAG'. You can use FLEXTREE_GETVAR(TREE_TAG,VAR_NAME) you can manipulate the return value of 
+///         FLEXTREE_GETVAR(TREE_TAG,VAR_NAME) as if it was a regular scoped variable. For example, the following operations
+///         can be performed:
+///             + FLEXTREE_GETVAR(TREE_TAG,a_float) = 0.0f;  
+///             + FLEXTREE_GETVAR(TREE_TAG,more_floats)[10] = 9.232f;  
+///         \n
+///         If a controller is transmitting data to another controller, then the receiving controller must have an identical
+///         (name and order) FLEX-tree defined in its source. This way, variables that are updated on the controller with authority 
+///         over said variables can be referenced in a remote workspace by the same name, as if the controllers were sharing a
+///         unified same memory.
+///         \n
+///         Currently, FLEX uses a simple 8-bit checksum to check packet viability.
+///         \n
+///         FLEX is merely a packeting protocol. All hardware handling (interrupt callbacks, etc.) must be defined elsewhere.
+///         For convenience FLEXTREE_RXBYTE(TREE_TAG) can be called from within a 
+///
 /// @defgroup FLEXTypedefs
 /// @defgroup FLEXBase
 /// @defgroup FLEX_UserAPI
@@ -159,7 +199,7 @@
 
 
 
-    /// @brief Sets byte to recieve buffer
+    /// @brief Sets byte to relieve buffer
     #define FLEXTREE_RXBYTE(tag,byte)                                                           \        
         buffer_put(&FLEXDef_Buffer_##tag,byte)
 
